@@ -1,0 +1,8 @@
+{
+  "task": "Fetch https://example.com and summarize the page, then write a JSON report",
+  "context": {
+    "report_filename": "reports/example_com.json",
+    "max_sentences": 3
+  },
+  "max_steps": 6
+}
