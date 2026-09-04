@@ -1,5 +1,9 @@
 # agency-ops-agent
 
+[![CI](https://github.com/muhammad-a-dev/agency-ops-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/muhammad-a-dev/agency-ops-agent/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Tool-using agent API for agency operations automation demos.**
 
 A small but serious FastAPI service that accepts a task, runs a bounded
@@ -7,9 +11,10 @@ plan/act tool loop, and returns a structured result with an audit trail.
 Built as a public portfolio project for
 [muhammad-a-dev](https://github.com/muhammad-a-dev).
 
-> **Default mode needs zero LLM API keys.** Tests and CI stay green offline
-> with a deterministic heuristic router. Optional LLM path is behind an
-> explicit env flag.
+> **Offline-first by design.** The default agent path needs **zero LLM API
+> keys**. Heuristic planning + deterministic `summarize_text` keep local demos,
+> tests, and CI green without network or paid models. An optional OpenAI-
+> compatible path is gated behind an explicit env flag and never required.
 
 ---
 
@@ -98,7 +103,7 @@ cp .env.example .env
 All settings use the `AGENCY_OPS_` prefix (see `.env.example`):
 
 | Variable | Default | Meaning |
-|----------|---------|---------|
+|----------|---------|--------|
 | `WORKSPACE_DIR` | `./workspace` | Sandbox root for file tools |
 | `MAX_STEPS` | `8` | Agent loop cap |
 | `HTTP_TIMEOUT_SECONDS` | `10` | httpx timeout |
@@ -186,15 +191,23 @@ python -m agency_ops_agent "list workspace files"
 
 ## Ethics & security
 
-This is a **demo automation API**, not a weaponized scraper or credential tool.
+This is a **demo automation API**, not a scraper, credential harvester, or
+unbounded remote-code runner. The offline agent loop only invokes allowlisted,
+typed tools.
 
-- **Allowlisted schemes**: `http` / `https` only for `http_get`.
+Hard limits baked in:
+
+- **Allowlisted schemes**: `http` / `https` only for `http_get` (rejects
+  `file:`, `ftp:`, `data:`, etc.).
 - **Timeouts + max bytes** on outbound HTTP.
-- **Workspace sandbox**: path traversal and absolute paths are rejected.
-- **No** credential theft, Discord tokens, destructive system tools, or
-  scraping-evasion features.
-- Prefer targeting systems you own or have explicit permission to access.
-- See [SECURITY.md](SECURITY.md) for reporting.
+- **Workspace sandbox**: relative paths only; `..` traversal and absolute paths
+  are rejected before any file I/O.
+- **Bounded steps**: agent loop stops at `max_steps` (default 8).
+- **No** credential theft, Discord/session tokens, destructive system tools,
+  or scraping-evasion features.
+
+Prefer targeting systems you own or have explicit permission to access.
+See [SECURITY.md](SECURITY.md) for reporting.
 
 ## Testing
 
