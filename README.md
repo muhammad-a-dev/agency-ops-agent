@@ -16,6 +16,8 @@ Built as a public portfolio project for
 > tests, and CI green without network or paid models. An optional OpenAI-
 > compatible path is gated behind an explicit env flag and never required.
 
+See [CHANGELOG.md](CHANGELOG.md) for released changes.
+
 ---
 
 ## Problem
