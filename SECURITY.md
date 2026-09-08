@@ -16,6 +16,17 @@ constrained:
 - Default agent mode requires **no LLM API keys**.
 - Optional LLM mode is behind `AGENCY_OPS_AGENT_LLM_ENABLED` and still fails closed.
 
+## Secrets & local configuration
+
+- Copy `.env.example` to `.env` for local runs. **Never commit** `.env`, API keys,
+  tokens, or private keys (see `.gitignore`).
+- Leave `AGENCY_OPS_AGENT_LLM_ENABLED=false` unless you intentionally need the
+  optional OpenAI-compatible path.
+- If a key is ever pasted into chat, logs, or a public issue, **rotate it** in the
+  provider console and treat the old value as compromised.
+- Prefer environment variables or a local secrets manager over hard-coding
+  credentials in source or examples.
+
 ## Reporting a vulnerability
 
 Please open a **private security advisory** on GitHub, or email the maintainer

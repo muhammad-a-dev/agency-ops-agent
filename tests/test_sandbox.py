@@ -30,3 +30,9 @@ def test_reject_absolute_path(workspace: Path) -> None:
 def test_nested_dotdot_rejected(workspace: Path) -> None:
     with pytest.raises(SandboxError):
         resolve_in_workspace(workspace, "ok/../../outside.txt")
+
+
+def test_empty_relative_resolves_to_workspace_root(workspace: Path) -> None:
+    """Empty relative path is treated as the workspace root (not an escape)."""
+    target = resolve_in_workspace(workspace, "")
+    assert target == workspace.resolve()
