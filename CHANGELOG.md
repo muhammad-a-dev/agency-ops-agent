@@ -15,6 +15,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Tests
 
 - Document empty relative path resolving to the workspace root in sandbox tests.
+- Cover settings env coercion: empty `audit_log_path` → `None`, string
+  `workspace_dir` → `Path`, `ensure_workspace` creates missing dirs, `max_steps`
+  bounds, and `get_settings` cache clear.
 
 ## [0.1.0] — 2026-09-06
 
