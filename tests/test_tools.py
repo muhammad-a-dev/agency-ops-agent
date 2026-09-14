@@ -29,14 +29,37 @@ def test_http_get_args_rejects_missing_host() -> None:
         HttpGetArgs(url="https://")
 
 
+def test_http_get_args_max_bytes_bounds() -> None:
+    with pytest.raises(ValidationError):
+        HttpGetArgs(url="https://example.com", max_bytes=512)
+    with pytest.raises(ValidationError):
+        HttpGetArgs(url="https://example.com", max_bytes=10_485_761)
+    ok = HttpGetArgs(url="https://example.com/a", max_bytes=2048)
+    assert ok.max_bytes == 2048
+
+
 def test_write_json_report_args_rejects_dir_trailing() -> None:
     with pytest.raises(ValidationError):
         WriteJsonReportArgs(filename="reports/", data={"a": 1})
 
 
+def test_write_json_report_args_indent_bounds() -> None:
+    with pytest.raises(ValidationError):
+        WriteJsonReportArgs(filename="out.json", data={"a": 1}, indent=-1)
+    with pytest.raises(ValidationError):
+        WriteJsonReportArgs(filename="out.json", data={"a": 1}, indent=9)
+    ok = WriteJsonReportArgs(filename="out.json", data={"a": 1}, indent=0)
+    assert ok.indent == 0
+
+
 def test_summarize_text_args_bounds() -> None:
     with pytest.raises(ValidationError):
         SummarizeTextArgs(text="hi", max_sentences=0)
+
+
+def test_summarize_text_args_rejects_empty_text() -> None:
+    with pytest.raises(ValidationError):
+        SummarizeTextArgs(text="")
 
 
 def test_deterministic_summarize_basic() -> None:
@@ -49,6 +72,12 @@ def test_deterministic_summarize_basic() -> None:
 
 def test_deterministic_summarize_emptyish() -> None:
     assert deterministic_summarize("   ") == ""
+
+
+def test_deterministic_summarize_no_terminators() -> None:
+    text = "plain paragraph without end punctuation"
+    out = deterministic_summarize(text, max_sentences=1)
+    assert out == text
 
 
 @respx.mock
@@ -81,6 +110,19 @@ def test_http_get_unknown_tool(tools: ToolRegistry) -> None:
         tools.invoke("not_a_tool", {})
 
 
+def test_registry_names_and_get(tools: ToolRegistry) -> None:
+    names = tools.names()
+    assert names == sorted(names)
+    assert set(names) == {
+        "http_get",
+        "write_json_report",
+        "summarize_text",
+        "list_workspace",
+    }
+    assert tools.get("http_get") is not None
+    assert tools.get("missing_tool") is None
+
+
 def test_write_and_list_workspace(tools: ToolRegistry, workspace: Path) -> None:
     written = tools.invoke(
         "write_json_report",
@@ -93,6 +135,20 @@ def test_write_and_list_workspace(tools: ToolRegistry, workspace: Path) -> None:
     assert listing["exists"] is True
     names = {e["name"] for e in listing["entries"]}
     assert "demo.json" in names
+
+
+def test_list_workspace_missing_path(tools: ToolRegistry) -> None:
+    listing = tools.invoke("list_workspace", {"path": "no/such/dir"})
+    assert listing["exists"] is False
+    assert listing["entries"] == []
+    assert listing["path"] == "no/such/dir"
+
+
+def test_list_workspace_rejects_file_path(tools: ToolRegistry, workspace: Path) -> None:
+    target = workspace / "notes.txt"
+    target.write_text("hello\n", encoding="utf-8")
+    with pytest.raises(SandboxError, match="Not a directory"):
+        tools.invoke("list_workspace", {"path": "notes.txt"})
 
 
 def test_write_rejects_traversal(tools: ToolRegistry) -> None:

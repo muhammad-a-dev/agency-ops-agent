@@ -18,6 +18,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Cover settings env coercion: empty `audit_log_path` → `None`, string
   `workspace_dir` → `Path`, `ensure_workspace` creates missing dirs, `max_steps`
   bounds, and `get_settings` cache clear.
+- Cover tool arg bounds (`http_get` max_bytes, write indent, empty summarize
+  text), `list_workspace` missing/file paths, registry `names`/`get`, and
+  deterministic summarize without sentence terminators.
 
 ## [0.1.0] — 2026-09-06
 
