@@ -20,6 +20,10 @@ def resolve_in_workspace(workspace: Path, relative: str) -> Path:
         User-supplied relative path (may contain ``..`` — will be rejected
         if the final path is outside the workspace).
     """
+    # NUL bytes can truncate paths in C APIs / some OS calls — reject early.
+    if "\x00" in relative:
+        raise SandboxError(f"Null bytes are not allowed in paths: {relative!r}")
+
     root = workspace.expanduser().resolve()
     # Disallow absolute user paths — always treat as relative to root.
     candidate = Path(relative)

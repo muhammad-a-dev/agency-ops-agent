@@ -164,6 +164,19 @@ def test_list_rejects_traversal(tools: ToolRegistry) -> None:
         tools.invoke("list_workspace", {"path": "../"})
 
 
+def test_write_rejects_null_byte_filename(tools: ToolRegistry) -> None:
+    with pytest.raises(SandboxError, match="[Nn]ull"):
+        tools.invoke(
+            "write_json_report",
+            {"filename": "evil\x00.json", "data": {"x": 1}},
+        )
+
+
+def test_list_rejects_null_byte_path(tools: ToolRegistry) -> None:
+    with pytest.raises(SandboxError, match="[Nn]ull"):
+        tools.invoke("list_workspace", {"path": "subdir\x00"})
+
+
 def test_summarize_default_deterministic(tools: ToolRegistry) -> None:
     result = tools.invoke(
         "summarize_text",

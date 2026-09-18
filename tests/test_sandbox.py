@@ -36,3 +36,14 @@ def test_empty_relative_resolves_to_workspace_root(workspace: Path) -> None:
     """Empty relative path is treated as the workspace root (not an escape)."""
     target = resolve_in_workspace(workspace, "")
     assert target == workspace.resolve()
+
+
+def test_reject_null_byte_in_path(workspace: Path) -> None:
+    """NUL bytes must not reach Path APIs (can truncate on some platforms)."""
+    with pytest.raises(SandboxError, match="[Nn]ull"):
+        resolve_in_workspace(workspace, "reports/out\x00.json")
+
+
+def test_reject_null_byte_only(workspace: Path) -> None:
+    with pytest.raises(SandboxError, match="[Nn]ull"):
+        resolve_in_workspace(workspace, "\x00")

@@ -7,6 +7,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Security
+
+- Reject null bytes (`\\x00`) in sandbox relative paths so truncated-path
+  tricks cannot bypass workspace confinement.
+
 ### Changed
 
 - Clarified secrets handling in `SECURITY.md` and `.env.example` (never commit
@@ -14,6 +19,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Tests
 
+- Cover sandbox and tool rejection of null bytes in relative paths.
 - Document empty relative path resolving to the workspace root in sandbox tests.
 - Cover settings env coercion: empty `audit_log_path` → `None`, string
   `workspace_dir` → `Path`, `ensure_workspace` creates missing dirs, `max_steps`
