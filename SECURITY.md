@@ -12,7 +12,10 @@ This project is a **portfolio / demo** tool-using agent API. It is intentionally
 constrained:
 
 - HTTP tools allow **http/https only**, with timeouts and max response bytes.
-- File tools are confined to a **workspace sandbox** (path traversal rejected).
+- `http_get` blocks **loopback, private, link-local, and cloud-metadata hosts**
+  (including redirect targets) to reduce SSRF risk.
+- File tools are confined to a **workspace sandbox** (path traversal and null
+  bytes rejected).
 - Default agent mode requires **no LLM API keys**.
 - Optional LLM mode is behind `AGENCY_OPS_AGENT_LLM_ENABLED` and still fails closed.
 

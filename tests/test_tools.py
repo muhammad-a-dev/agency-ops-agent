@@ -29,6 +29,31 @@ def test_http_get_args_rejects_missing_host() -> None:
         HttpGetArgs(url="https://")
 
 
+@pytest.mark.parametrize(
+    "bad_url",
+    [
+        "http://localhost/secret",
+        "http://127.0.0.1/",
+        "http://[::1]/",
+        "http://0.0.0.0/",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://10.0.0.5/internal",
+        "http://192.168.1.1/admin",
+        "http://172.16.0.1/",
+        "http://metadata.google.internal/",
+        "http://foo.localhost/",
+    ],
+)
+def test_http_get_args_rejects_blocked_hosts(bad_url: str) -> None:
+    with pytest.raises(ValidationError, match="not allowed|scheme|host"):
+        HttpGetArgs(url=bad_url)
+
+
+def test_http_get_args_allows_public_host() -> None:
+    ok = HttpGetArgs(url="https://example.com/path")
+    assert ok.url.startswith("https://")
+
+
 def test_http_get_args_max_bytes_bounds() -> None:
     with pytest.raises(ValidationError):
         HttpGetArgs(url="https://example.com", max_bytes=512)
@@ -103,6 +128,17 @@ def test_http_get_truncates(tools: ToolRegistry, settings) -> None:
     result = reg.invoke("http_get", {"url": "https://example.com/big"})
     assert result["truncated"] is True
     assert result["bytes_read"] <= 20
+
+
+@respx.mock
+def test_http_get_blocks_redirect_to_loopback(tools: ToolRegistry) -> None:
+    respx.get("https://example.com/jump").mock(
+        return_value=httpx.Response(
+            302, headers={"Location": "http://127.0.0.1/secret"}
+        )
+    )
+    with pytest.raises(ValueError, match="not allowed|Disallowed"):
+        tools.invoke("http_get", {"url": "https://example.com/jump"})
 
 
 def test_http_get_unknown_tool(tools: ToolRegistry) -> None:

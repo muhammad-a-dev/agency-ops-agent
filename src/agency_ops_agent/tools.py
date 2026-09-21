@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import re
@@ -18,6 +19,53 @@ from agency_ops_agent.settings import Settings
 logger = logging.getLogger(__name__)
 
 ALLOWED_SCHEMES = frozenset({"http", "https"})
+
+# Hostnames blocked for SSRF hardening (http_get).
+BLOCKED_HOSTNAMES = frozenset(
+    {
+        "localhost",
+        "metadata",
+        "metadata.google.internal",
+    }
+)
+
+
+def is_blocked_url_host(host: str) -> bool:
+    """Return True for loopback/private/link-local/metadata hosts."""
+    name = host.strip().lower().rstrip(".")
+    if not name:
+        return True
+    if name in BLOCKED_HOSTNAMES or name.endswith(".localhost"):
+        return True
+    try:
+        ip = ipaddress.ip_address(name)
+    except ValueError:
+        return False
+    return bool(
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+def assert_http_url_allowed(url: str) -> None:
+    """Raise ValueError if ``url`` uses a bad scheme or blocked host."""
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in ALLOWED_SCHEMES:
+        raise ValueError(f"Disallowed URL scheme: {parsed.scheme!r}")
+    host = parsed.hostname
+    if not host:
+        raise ValueError("URL must include a host")
+    if is_blocked_url_host(host):
+        raise ValueError(f"URL host is not allowed: {host!r}")
+
+
+def _httpx_block_ssrf_hosts(request: httpx.Request) -> None:
+    """httpx request hook — also covers redirect targets."""
+    assert_http_url_allowed(str(request.url))
 
 
 # ---------------------------------------------------------------------------
@@ -39,11 +87,7 @@ class HttpGetArgs(BaseModel):
     @field_validator("url")
     @classmethod
     def _scheme_ok(cls, value: str) -> str:
-        parsed = urlparse(value)
-        if parsed.scheme.lower() not in ALLOWED_SCHEMES:
-            raise ValueError(f"URL scheme must be http or https, got {parsed.scheme!r}")
-        if not parsed.netloc:
-            raise ValueError("URL must include a host")
+        assert_http_url_allowed(value)
         return value
 
 
@@ -193,9 +237,7 @@ class ToolRegistry:
     def http_get(self, url: str, max_bytes: int | None = None) -> dict[str, Any]:
         limit = max_bytes or self.settings.http_max_bytes
         timeout = self.settings.http_timeout_seconds
-        parsed = urlparse(url)
-        if parsed.scheme.lower() not in ALLOWED_SCHEMES:
-            raise ValueError(f"Disallowed URL scheme: {parsed.scheme!r}")
+        assert_http_url_allowed(url)
 
         logger.info("http_get url=%s max_bytes=%s", url, limit)
         with (
@@ -203,6 +245,7 @@ class ToolRegistry:
                 timeout=timeout,
                 follow_redirects=True,
                 max_redirects=5,
+                event_hooks={"request": [_httpx_block_ssrf_hosts]},
             ) as client,
             client.stream("GET", url) as response,
         ):
