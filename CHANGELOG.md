@@ -9,6 +9,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+- Bound `TaskRequest.context` to at most 32 keys and 64 KiB of serialized JSON
+  so a single job cannot balloon memory via an oversized payload.
 - Block loopback, private, link-local, and cloud-metadata hosts in `http_get`
   (SSRF hardening), including redirect targets via an httpx request hook.
 - Reject null bytes (`\\x00`) in sandbox relative paths so truncated-path
@@ -21,6 +23,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Tests
 
+- Cover `TaskRequest.context` key-count and JSON byte-size rejection, plus
+  API 422 responses for oversized / too-many-key context payloads.
 - Cover `http_get` rejection of localhost / private / metadata hosts and
   redirects to loopback.
 - Cover sandbox and tool rejection of null bytes in relative paths.

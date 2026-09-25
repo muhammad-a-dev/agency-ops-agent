@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# Soft caps so a single job request cannot balloon memory via context.
+MAX_CONTEXT_KEYS = 32
+MAX_CONTEXT_JSON_BYTES = 65_536  # 64 KiB serialized
 
 
 def utc_now() -> datetime:
@@ -27,6 +32,25 @@ class TaskRequest(BaseModel):
     task: str = Field(..., min_length=1, max_length=8000)
     context: dict[str, Any] = Field(default_factory=dict)
     max_steps: int | None = Field(default=None, ge=1, le=50)
+
+    @field_validator("context")
+    @classmethod
+    def _bound_context(cls, value: dict[str, Any]) -> dict[str, Any]:
+        """Reject oversized context payloads (key count + JSON byte size)."""
+        if len(value) > MAX_CONTEXT_KEYS:
+            raise ValueError(
+                f"context has too many keys ({len(value)}); max is {MAX_CONTEXT_KEYS}"
+            )
+        try:
+            encoded = json.dumps(value, default=str, ensure_ascii=False)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("context must be JSON-serializable") from exc
+        size = len(encoded.encode("utf-8"))
+        if size > MAX_CONTEXT_JSON_BYTES:
+            raise ValueError(
+                f"context JSON is {size} bytes; max is {MAX_CONTEXT_JSON_BYTES}"
+            )
+        return value
 
 
 class ToolCallRecord(BaseModel):

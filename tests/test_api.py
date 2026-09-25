@@ -115,3 +115,26 @@ def test_list_jobs(client: TestClient) -> None:
 def test_validation_error_empty_task(client: TestClient) -> None:
     resp = client.post("/jobs", json={"task": ""})
     assert resp.status_code == 422
+
+
+def test_rejects_oversized_context(client: TestClient) -> None:
+    # API must surface Pydantic context size bounds as 422.
+    resp = client.post(
+        "/jobs",
+        json={
+            "task": "summarize this brief note please",
+            "context": {"text": "y" * 70_000},
+        },
+    )
+    assert resp.status_code == 422
+
+
+def test_rejects_too_many_context_keys(client: TestClient) -> None:
+    resp = client.post(
+        "/jobs",
+        json={
+            "task": "list workspace files please",
+            "context": {f"k{i}": i for i in range(40)},
+        },
+    )
+    assert resp.status_code == 422

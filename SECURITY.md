@@ -16,6 +16,8 @@ constrained:
   (including redirect targets) to reduce SSRF risk.
 - File tools are confined to a **workspace sandbox** (path traversal and null
   bytes rejected).
+- Job `context` payloads are bounded (**32 keys**, **64 KiB** JSON) to limit
+  memory use from oversized requests.
 - Default agent mode requires **no LLM API keys**.
 - Optional LLM mode is behind `AGENCY_OPS_AGENT_LLM_ENABLED` and still fails closed.
 
