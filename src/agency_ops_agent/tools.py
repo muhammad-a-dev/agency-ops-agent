@@ -91,6 +91,10 @@ class HttpGetArgs(BaseModel):
         return value
 
 
+# Soft cap so write_json_report cannot fill the disk with one huge payload.
+MAX_REPORT_JSON_BYTES = 262_144  # 256 KiB serialized
+
+
 class WriteJsonReportArgs(BaseModel):
     """Write a structured JSON report into the sandbox workspace."""
 
@@ -108,6 +112,21 @@ class WriteJsonReportArgs(BaseModel):
     def _safe_name(cls, value: str) -> str:
         if value.endswith("/") or value.endswith("\\"):
             raise ValueError("filename must be a file path, not a directory")
+        return value
+
+    @field_validator("data")
+    @classmethod
+    def _bound_data(cls, value: dict[str, Any]) -> dict[str, Any]:
+        """Reject oversized report payloads (serialized JSON byte size)."""
+        try:
+            encoded = json.dumps(value, default=str, ensure_ascii=False)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("data must be JSON-serializable") from exc
+        size = len(encoded.encode("utf-8"))
+        if size > MAX_REPORT_JSON_BYTES:
+            raise ValueError(
+                f"report data JSON is {size} bytes; max is {MAX_REPORT_JSON_BYTES}"
+            )
         return value
 
 

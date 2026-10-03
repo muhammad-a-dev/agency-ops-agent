@@ -18,6 +18,8 @@ constrained:
   bytes rejected).
 - Job `context` payloads are bounded (**32 keys**, **64 KiB** JSON) to limit
   memory use from oversized requests.
+- `write_json_report` report `data` is bounded (**256 KiB** serialized JSON)
+  so a single tool call cannot fill the workspace disk.
 - Default agent mode requires **no LLM API keys**.
 - Optional LLM mode is behind `AGENCY_OPS_AGENT_LLM_ENABLED` and still fails closed.
 

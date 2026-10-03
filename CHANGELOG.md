@@ -9,6 +9,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+- Bound `write_json_report` `data` to at most 256 KiB of serialized JSON so a
+  single tool call cannot fill the workspace disk with an oversized report.
 - Bound `TaskRequest.context` to at most 32 keys and 64 KiB of serialized JSON
   so a single job cannot balloon memory via an oversized payload.
 - Block loopback, private, link-local, and cloud-metadata hosts in `http_get`
@@ -23,6 +25,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Tests
 
+- Cover `write_json_report` rejection of oversized report `data` payloads
+  (schema validation and tool invoke).
 - Cover `TaskRequest.context` key-count and JSON byte-size rejection, plus
   API 422 responses for oversized / too-many-key context payloads.
 - Cover `http_get` rejection of localhost / private / metadata hosts and

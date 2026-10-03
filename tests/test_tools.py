@@ -11,6 +11,7 @@ from pydantic import ValidationError
 
 from agency_ops_agent.sandbox import SandboxError
 from agency_ops_agent.tools import (
+    MAX_REPORT_JSON_BYTES,
     HttpGetArgs,
     SummarizeTextArgs,
     ToolRegistry,
@@ -75,6 +76,30 @@ def test_write_json_report_args_indent_bounds() -> None:
         WriteJsonReportArgs(filename="out.json", data={"a": 1}, indent=9)
     ok = WriteJsonReportArgs(filename="out.json", data={"a": 1}, indent=0)
     assert ok.indent == 0
+
+
+
+def test_write_json_report_args_rejects_oversized_data() -> None:
+    blob = "x" * (MAX_REPORT_JSON_BYTES + 1)
+    with pytest.raises(ValidationError, match="bytes"):
+        WriteJsonReportArgs(filename="reports/big.json", data={"blob": blob})
+
+
+def test_write_json_report_args_allows_data_under_limit() -> None:
+    # Keep well under the cap so the wrapper keys do not push us over.
+    blob = "y" * 1024
+    ok = WriteJsonReportArgs(filename="reports/ok.json", data={"blob": blob, "n": 1})
+    assert ok.data["n"] == 1
+    assert len(ok.data["blob"]) == 1024
+
+
+def test_write_json_report_invoke_rejects_oversized_data(tools: ToolRegistry) -> None:
+    blob = "z" * (MAX_REPORT_JSON_BYTES + 1)
+    with pytest.raises(ValidationError, match="bytes"):
+        tools.invoke(
+            "write_json_report",
+            {"filename": "reports/too_big.json", "data": {"blob": blob}},
+        )
 
 
 def test_summarize_text_args_bounds() -> None:
