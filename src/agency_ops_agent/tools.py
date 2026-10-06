@@ -6,6 +6,7 @@ import ipaddress
 import json
 import logging
 import re
+import socket
 from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
@@ -30,6 +31,24 @@ BLOCKED_HOSTNAMES = frozenset(
 )
 
 
+def _parse_ip_host(name: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """Parse ``name`` as an IP, including legacy IPv4 forms.
+
+    ``ipaddress`` only accepts dotted-quad IPv4, but the system resolver
+    (``getaddrinfo``) also accepts shorthand like ``127.1``, a single integer
+    like ``2130706433``, or hex like ``0x7f000001``. httpx passes those through
+    untouched, so they must be normalised here or they slip past the blocklist.
+    """
+    try:
+        return ipaddress.ip_address(name)
+    except ValueError:
+        pass
+    try:
+        return ipaddress.IPv4Address(socket.inet_aton(name))
+    except (OSError, ValueError):
+        return None
+
+
 def is_blocked_url_host(host: str) -> bool:
     """Return True for loopback/private/link-local/metadata hosts."""
     name = host.strip().lower().rstrip(".")
@@ -37,9 +56,8 @@ def is_blocked_url_host(host: str) -> bool:
         return True
     if name in BLOCKED_HOSTNAMES or name.endswith(".localhost"):
         return True
-    try:
-        ip = ipaddress.ip_address(name)
-    except ValueError:
+    ip = _parse_ip_host(name)
+    if ip is None:
         return False
     return bool(
         ip.is_private

@@ -43,11 +43,24 @@ def test_http_get_args_rejects_missing_host() -> None:
         "http://172.16.0.1/",
         "http://metadata.google.internal/",
         "http://foo.localhost/",
+        # Legacy IPv4 forms the system resolver maps to loopback / metadata.
+        "http://127.1/",
+        "http://2130706433/",
+        "http://0x7f000001/",
+        "http://0x7f.0.0.1/",
+        "http://2852039166/latest/meta-data/",
     ],
 )
 def test_http_get_args_rejects_blocked_hosts(bad_url: str) -> None:
     with pytest.raises(ValidationError, match="not allowed|scheme|host"):
         HttpGetArgs(url=bad_url)
+
+
+def test_is_blocked_url_host_keeps_plain_hostnames_allowed() -> None:
+    from agency_ops_agent.tools import is_blocked_url_host
+
+    assert not is_blocked_url_host("example.com")
+    assert not is_blocked_url_host("api.github.com")
 
 
 def test_http_get_args_allows_public_host() -> None:

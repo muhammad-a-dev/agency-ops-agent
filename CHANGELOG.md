@@ -15,6 +15,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   so a single job cannot balloon memory via an oversized payload.
 - Block loopback, private, link-local, and cloud-metadata hosts in `http_get`
   (SSRF hardening), including redirect targets via an httpx request hook.
+- Normalise legacy IPv4 host forms (`127.1`, `2130706433`, `0x7f000001`) before
+  the `http_get` host blocklist check. httpx passes them to the system resolver
+  unchanged, which maps them to loopback or metadata addresses.
 - Reject null bytes (`\\x00`) in sandbox relative paths so truncated-path
   tricks cannot bypass workspace confinement.
 
@@ -31,6 +34,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   API 422 responses for oversized / too-many-key context payloads.
 - Cover `http_get` rejection of localhost / private / metadata hosts and
   redirects to loopback.
+- Cover `http_get` rejection of shorthand, integer, and hex IPv4 hosts that
+  resolve to loopback or the cloud metadata address.
 - Cover sandbox and tool rejection of null bytes in relative paths.
 - Document empty relative path resolving to the workspace root in sandbox tests.
 - Cover settings env coercion: empty `audit_log_path` → `None`, string
