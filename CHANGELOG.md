@@ -9,6 +9,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+- Reject `http_get` URLs (and redirect targets) that embed credentials such as
+  `user:pass@host`, so secrets are never written to logs, job results, or the
+  JSONL audit trail.
 - Bound `write_json_report` `data` to at most 256 KiB of serialized JSON so a
   single tool call cannot fill the workspace disk with an oversized report.
 - Bound `TaskRequest.context` to at most 32 keys and 64 KiB of serialized JSON

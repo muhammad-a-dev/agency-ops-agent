@@ -14,6 +14,8 @@ constrained:
 - HTTP tools allow **http/https only**, with timeouts and max response bytes.
 - `http_get` blocks **loopback, private, link-local, and cloud-metadata hosts**
   (including redirect targets) to reduce SSRF risk.
+- `http_get` rejects URLs with embedded credentials (`user:pass@host`) so
+  secrets never land in logs or the audit trail.
 - File tools are confined to a **workspace sandbox** (path traversal and null
   bytes rejected).
 - Job `context` payloads are bounded (**32 keys**, **64 KiB** JSON) to limit

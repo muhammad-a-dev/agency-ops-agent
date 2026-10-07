@@ -63,6 +63,29 @@ def test_is_blocked_url_host_keeps_plain_hostnames_allowed() -> None:
     assert not is_blocked_url_host("api.github.com")
 
 
+@pytest.mark.parametrize(
+    "bad_url",
+    [
+        "https://user:secret@example.com/page",
+        "https://token@example.com/page",
+        "https://:secret@example.com/page",
+        "https://user:@example.com/",
+    ],
+)
+def test_http_get_args_rejects_embedded_credentials(bad_url: str) -> None:
+    with pytest.raises(ValidationError, match="credentials"):
+        HttpGetArgs(url=bad_url)
+
+
+@respx.mock
+def test_http_get_blocks_redirect_with_credentials(tools: ToolRegistry) -> None:
+    respx.get("https://example.com/creds").mock(
+        return_value=httpx.Response(302, headers={"Location": "https://user:secret@example.org/"})
+    )
+    with pytest.raises(ValueError, match="credentials"):
+        tools.invoke("http_get", {"url": "https://example.com/creds"})
+
+
 def test_http_get_args_allows_public_host() -> None:
     ok = HttpGetArgs(url="https://example.com/path")
     assert ok.url.startswith("https://")

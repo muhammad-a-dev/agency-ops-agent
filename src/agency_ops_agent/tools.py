@@ -77,6 +77,10 @@ def assert_http_url_allowed(url: str) -> None:
     host = parsed.hostname
     if not host:
         raise ValueError("URL must include a host")
+    # Credentials in the URL would be written to logs, job results, and the
+    # JSONL audit trail verbatim, so refuse them instead of fetching.
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("URL must not include credentials (user:pass@host)")
     if is_blocked_url_host(host):
         raise ValueError(f"URL host is not allowed: {host!r}")
 
