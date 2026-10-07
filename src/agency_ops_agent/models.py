@@ -38,18 +38,14 @@ class TaskRequest(BaseModel):
     def _bound_context(cls, value: dict[str, Any]) -> dict[str, Any]:
         """Reject oversized context payloads (key count + JSON byte size)."""
         if len(value) > MAX_CONTEXT_KEYS:
-            raise ValueError(
-                f"context has too many keys ({len(value)}); max is {MAX_CONTEXT_KEYS}"
-            )
+            raise ValueError(f"context has too many keys ({len(value)}); max is {MAX_CONTEXT_KEYS}")
         try:
             encoded = json.dumps(value, default=str, ensure_ascii=False)
         except (TypeError, ValueError) as exc:
             raise ValueError("context must be JSON-serializable") from exc
         size = len(encoded.encode("utf-8"))
         if size > MAX_CONTEXT_JSON_BYTES:
-            raise ValueError(
-                f"context JSON is {size} bytes; max is {MAX_CONTEXT_JSON_BYTES}"
-            )
+            raise ValueError(f"context JSON is {size} bytes; max is {MAX_CONTEXT_JSON_BYTES}")
         return value
 
 

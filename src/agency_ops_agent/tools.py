@@ -142,9 +142,7 @@ class WriteJsonReportArgs(BaseModel):
             raise ValueError("data must be JSON-serializable") from exc
         size = len(encoded.encode("utf-8"))
         if size > MAX_REPORT_JSON_BYTES:
-            raise ValueError(
-                f"report data JSON is {size} bytes; max is {MAX_REPORT_JSON_BYTES}"
-            )
+            raise ValueError(f"report data JSON is {size} bytes; max is {MAX_REPORT_JSON_BYTES}")
         return value
 
 

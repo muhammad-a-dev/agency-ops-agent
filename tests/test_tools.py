@@ -91,7 +91,6 @@ def test_write_json_report_args_indent_bounds() -> None:
     assert ok.indent == 0
 
 
-
 def test_write_json_report_args_rejects_oversized_data() -> None:
     blob = "x" * (MAX_REPORT_JSON_BYTES + 1)
     with pytest.raises(ValidationError, match="bytes"):
@@ -171,9 +170,7 @@ def test_http_get_truncates(tools: ToolRegistry, settings) -> None:
 @respx.mock
 def test_http_get_blocks_redirect_to_loopback(tools: ToolRegistry) -> None:
     respx.get("https://example.com/jump").mock(
-        return_value=httpx.Response(
-            302, headers={"Location": "http://127.0.0.1/secret"}
-        )
+        return_value=httpx.Response(302, headers={"Location": "http://127.0.0.1/secret"})
     )
     with pytest.raises(ValueError, match="not allowed|Disallowed"):
         tools.invoke("http_get", {"url": "https://example.com/jump"})
