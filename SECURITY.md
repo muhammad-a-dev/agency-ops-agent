@@ -20,6 +20,8 @@ constrained:
   bytes rejected).
 - Job `context` payloads are bounded (**32 keys**, **64 KiB** JSON) to limit
   memory use from oversized requests.
+- `list_workspace` returns at most **500 entries** per call (with a
+  `truncated` flag) so one huge directory cannot bloat replies or the audit log.
 - `write_json_report` report `data` is bounded (**256 KiB** serialized JSON)
   so a single tool call cannot fill the workspace disk.
 - Default agent mode requires **no LLM API keys**.

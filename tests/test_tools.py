@@ -283,3 +283,28 @@ def test_summarize_default_deterministic(tools: ToolRegistry) -> None:
 def test_tool_schemas_present(tools: ToolRegistry) -> None:
     names = {s["name"] for s in tools.schemas()}
     assert names == {"http_get", "write_json_report", "summarize_text", "list_workspace"}
+
+
+def test_list_workspace_caps_entries(
+    tools: ToolRegistry, workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import agency_ops_agent.tools as tools_mod
+
+    monkeypatch.setattr(tools_mod, "MAX_LIST_ENTRIES", 3)
+    bulk = workspace / "bulk"
+    bulk.mkdir()
+    for i in range(5):
+        (bulk / f"f{i}.txt").write_text("x", encoding="utf-8")
+
+    listing = tools.invoke("list_workspace", {"path": "bulk"})
+    assert listing["truncated"] is True
+    assert listing["total_entries"] == 5
+    assert [e["name"] for e in listing["entries"]] == ["f0.txt", "f1.txt", "f2.txt"]
+
+
+def test_list_workspace_not_truncated_under_cap(tools: ToolRegistry, workspace: Path) -> None:
+    (workspace / "small").mkdir()
+    (workspace / "small" / "a.txt").write_text("x", encoding="utf-8")
+    listing = tools.invoke("list_workspace", {"path": "small"})
+    assert listing["truncated"] is False
+    assert listing["total_entries"] == 1

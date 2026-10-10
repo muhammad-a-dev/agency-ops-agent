@@ -9,6 +9,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+- Cap `list_workspace` at 500 entries per call and report `total_entries` plus
+  `truncated`, so one huge directory cannot bloat a tool reply or the audit log.
 - Reject `http_get` URLs (and redirect targets) that embed credentials such as
   `user:pass@host`, so secrets are never written to logs, job results, or the
   JSONL audit trail.

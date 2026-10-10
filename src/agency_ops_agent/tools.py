@@ -113,6 +113,9 @@ class HttpGetArgs(BaseModel):
         return value
 
 
+# Cap list_workspace output so one huge directory cannot bloat a tool reply.
+MAX_LIST_ENTRIES = 500
+
 # Soft cap so write_json_report cannot fill the disk with one huge payload.
 MAX_REPORT_JSON_BYTES = 262_144  # 256 KiB serialized
 
@@ -393,8 +396,10 @@ class ToolRegistry:
         if not target.is_dir():
             raise SandboxError(f"Not a directory: {path!r}")
 
+        children = sorted(target.iterdir(), key=lambda p: p.name)
+        truncated = len(children) > MAX_LIST_ENTRIES
         entries: list[dict[str, Any]] = []
-        for child in sorted(target.iterdir(), key=lambda p: p.name):
+        for child in children[:MAX_LIST_ENTRIES]:
             rel = str(child.relative_to(self.workspace.resolve()))
             entries.append(
                 {
@@ -404,4 +409,10 @@ class ToolRegistry:
                     "size": child.stat().st_size if child.is_file() else None,
                 }
             )
-        return {"path": path, "exists": True, "entries": entries}
+        return {
+            "path": path,
+            "exists": True,
+            "entries": entries,
+            "total_entries": len(children),
+            "truncated": truncated,
+        }
