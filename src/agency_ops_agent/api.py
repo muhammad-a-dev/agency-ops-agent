@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, status
 
 from agency_ops_agent import __version__
-from agency_ops_agent.jobs import JobStore
+from agency_ops_agent.jobs import JobStore, JobStoreFullError
 from agency_ops_agent.logging_config import configure_logging
 from agency_ops_agent.models import (
     HealthResponse,
@@ -16,6 +16,10 @@ from agency_ops_agent.models import (
     TaskRequest,
 )
 from agency_ops_agent.settings import Settings, get_settings
+
+
+def _store_full(exc: JobStoreFullError) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -70,7 +74,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         body: TaskRequest,
         job_store: JobStore = Depends(_store),
     ) -> JobResponse:
-        job = job_store.create_and_run(body)
+        try:
+            job = job_store.create_and_run(body)
+        except JobStoreFullError as exc:
+            raise _store_full(exc) from None
         return JobResponse.from_job(job)
 
     @app.post(
@@ -84,7 +91,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         body: TaskRequest,
         job_store: JobStore = Depends(_store),
     ) -> JobCreateResponse:
-        job = job_store.create(body)
+        try:
+            job = job_store.create(body)
+        except JobStoreFullError as exc:
+            raise _store_full(exc) from None
         return JobCreateResponse(id=job.id, status=job.status)
 
     @app.post(

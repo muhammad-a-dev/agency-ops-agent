@@ -13,9 +13,15 @@ from agency_ops_agent.tools import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
+_FINISHED = (JobStatus.SUCCEEDED, JobStatus.FAILED)
+
+
+class JobStoreFullError(RuntimeError):
+    """Raised when the store is at capacity and no finished job can be evicted."""
+
 
 class JobStore:
-    """Thread-safe in-memory job registry."""
+    """Thread-safe in-memory job registry, bounded by ``settings.max_jobs``."""
 
     def __init__(
         self,
@@ -32,9 +38,27 @@ class JobStore:
     def create(self, request: TaskRequest) -> Job:
         job = Job(request=request)
         with self._lock:
+            self._make_room_locked()
             self._jobs[job.id] = job
         logger.info("job.created id=%s", job.id)
         return job
+
+    def _make_room_locked(self) -> None:
+        """Evict the oldest finished jobs until one more job fits.
+
+        Caller must hold ``self._lock``. Dict order is insertion order, so the
+        scan visits the oldest jobs first. Pending and running jobs are kept.
+        """
+        limit = self.settings.max_jobs
+        if len(self._jobs) < limit:
+            return
+        finished = [job_id for job_id, job in self._jobs.items() if job.status in _FINISHED]
+        for job_id in finished:
+            del self._jobs[job_id]
+            logger.info("job.evicted id=%s", job_id)
+            if len(self._jobs) < limit:
+                return
+        raise JobStoreFullError(f"job store is full: {limit} jobs are pending or running")
 
     def get(self, job_id: str) -> Job | None:
         with self._lock:

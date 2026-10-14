@@ -20,6 +20,9 @@ constrained:
   bytes rejected).
 - Job `context` payloads are bounded (**32 keys**, **64 KiB** JSON) to limit
   memory use from oversized requests.
+- The in-memory job store keeps at most **1000 jobs** by default
+  (`AGENCY_OPS_MAX_JOBS`). The oldest finished jobs are evicted first, and new
+  jobs get HTTP 503 when every slot is still pending or running.
 - `list_workspace` returns at most **500 entries** per call (with a
   `truncated` flag) so one huge directory cannot bloat replies or the audit log.
 - `write_json_report` report `data` is bounded (**256 KiB** serialized JSON)

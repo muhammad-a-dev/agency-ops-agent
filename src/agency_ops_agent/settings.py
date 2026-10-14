@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     max_steps: int = Field(default=8, ge=1, le=50)
     http_timeout_seconds: float = Field(default=10.0, gt=0, le=120)
     http_max_bytes: int = Field(default=1_048_576, ge=1024, le=10_485_760)
+    max_jobs: int = Field(
+        default=1000,
+        ge=1,
+        le=100_000,
+        description="Max jobs kept in memory; oldest finished jobs are evicted first.",
+    )
     audit_log_path: Path | None = Field(
         default=None,
         description="Optional JSONL audit log path. None = in-memory only.",

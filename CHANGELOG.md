@@ -9,6 +9,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+- Cap the in-memory job store at `max_jobs` (default 1000, env
+  `AGENCY_OPS_MAX_JOBS`). At capacity the oldest finished jobs are evicted
+  first; pending and running jobs are never dropped, and if every slot is
+  unfinished, job creation returns HTTP 503 instead of growing memory forever.
 - Cap `list_workspace` at 500 entries per call and report `total_entries` plus
   `truncated`, so one huge directory cannot bloat a tool reply or the audit log.
 - Reject `http_get` URLs (and redirect targets) that embed credentials such as
@@ -33,6 +37,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Tests
 
+- Cover job store eviction order, pending jobs never being evicted,
+  `JobStoreFullError` at capacity, `max_jobs` bounds, and the API 503 response.
 - Cover `write_json_report` rejection of oversized report `data` payloads
   (schema validation and tool invoke).
 - Cover `TaskRequest.context` key-count and JSON byte-size rejection, plus
