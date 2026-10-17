@@ -23,6 +23,9 @@ constrained:
 - The in-memory job store keeps at most **1000 jobs** by default
   (`AGENCY_OPS_MAX_JOBS`). The oldest finished jobs are evicted first, and new
   jobs get HTTP 503 when every slot is still pending or running.
+- The in-memory audit trail keeps the newest **10000 tool calls** by default
+  (`AGENCY_OPS_AUDIT_MAX_RECORDS`), since each `http_get` record can carry a
+  response body. The optional JSONL audit file still gets every record.
 - `list_workspace` returns at most **500 entries** per call (with a
   `truncated` flag) so one huge directory cannot bloat replies or the audit log.
 - `write_json_report` report `data` is bounded (**256 KiB** serialized JSON)

@@ -9,6 +9,11 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+- Cap the in-memory audit trail at `audit_max_records` (default 10000, env
+  `AGENCY_OPS_AUDIT_MAX_RECORDS`). It is shared by every job and each
+  `http_get` record can hold a response body, so before this it kept growing
+  even after the job store evicted old jobs. The oldest records are dropped
+  first and counted in `AuditLog.dropped`; the JSONL file still keeps all.
 - Cap the in-memory job store at `max_jobs` (default 1000, env
   `AGENCY_OPS_MAX_JOBS`). At capacity the oldest finished jobs are evicted
   first; pending and running jobs are never dropped, and if every slot is
@@ -37,6 +42,9 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Tests
 
+- Cover the audit memory cap (oldest dropped first, `dropped` count, JSONL
+  keeps every record, invalid `max_records`) and the settings wiring into
+  `JobStore`.
 - Cover job store eviction order, pending jobs never being evicted,
   `JobStoreFullError` at capacity, `max_jobs` bounds, and the API 503 response.
 - Cover `write_json_report` rejection of oversized report `data` payloads

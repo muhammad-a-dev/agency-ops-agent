@@ -36,6 +36,12 @@ class Settings(BaseSettings):
         default=None,
         description="Optional JSONL audit log path. None = in-memory only.",
     )
+    audit_max_records: int = Field(
+        default=10_000,
+        ge=1,
+        le=1_000_000,
+        description="Max tool-call records kept in memory; the JSONL file keeps all.",
+    )
     agent_llm_enabled: bool = Field(
         default=False,
         description="If true and API key present, use optional LLM path.",

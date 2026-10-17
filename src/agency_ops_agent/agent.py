@@ -33,7 +33,11 @@ class Agent:
     ) -> None:
         self.settings = settings
         self.tools = tools if tools is not None else ToolRegistry(settings)
-        self.audit = audit if audit is not None else AuditLog(settings.audit_log_path)
+        self.audit = (
+            audit
+            if audit is not None
+            else AuditLog(settings.audit_log_path, max_records=settings.audit_max_records)
+        )
 
     def run(
         self,
